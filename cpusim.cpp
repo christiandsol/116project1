@@ -73,15 +73,16 @@ int main(int argc, char* argv[])
 		//fetch
 		bitset<32> instr = myInst.fetch(mem);
 		// myInst.print_instr(instr);
-		myCPU.read_instr(instr);
+		CPU::InstrFunc func = myCPU.read_instr(instr);
 		// decode
 		// ... 
 		myCPU.incPC();
-		if (myCPU.readPC() > maxPC)
+		if (func == nullptr)
 			break;
+		func(&myCPU, instr);
 	}
-	int a0 =0;
-	int a1 =0;  
+	int a0 =myCPU.registers[10].get_cur_val();
+	int a1 =myCPU.registers[11].get_cur_val()  ;
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
 	  cout << "(" << a0 << "," << a1 << ")" << endl;
 	

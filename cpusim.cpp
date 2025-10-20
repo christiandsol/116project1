@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 	CPU class also has different functions for each stage (e.g., fetching an instruction, decoding, etc.).
 	*/
 
-	CPU myCPU;  // call the approriate constructor here to initialize the processor...  
+	CPU myCPU(instMem);  // call the approriate constructor here to initialize the processor...  
 	// make sure to create a variable for PC and resets it to zero (e.g., unsigned int PC = 0); 
 	/* OPTIONAL: Instantiate your Instruction object here. */
 	Instruction myInst; 

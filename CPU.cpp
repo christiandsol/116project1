@@ -1,15 +1,12 @@
 #include "CPU.h"
 #include "util.h"
+#include <bitset>
 #include <cstddef>
 #include <sstream>
 #include <valarray>
 
-CPU::CPU() {
-  PC = 0;                        // set PC to 0
-  for (int i = 0; i < 4096; i++) // copy instrMEM
-  {
-    dmemory[i] = (0);
-  }
+CPU::CPU(char *mem) {
+  PC = 0; // set PC to 0
 }
 
 unsigned long CPU::readPC() { return PC; }
@@ -53,7 +50,7 @@ CPU::InstrFunc CPU::read_instr(bitset<32> bits) {
   case 0b1100111: // JALR
     func = &CPU::exec_JALR;
     break;
-  case 0b0000000: // terminate 
+  case 0b0000000: // terminate
     func = nullptr;
     break;
   default:
@@ -96,7 +93,7 @@ void CPU::exec_Itype(CPU *cpu, std::bitset<32> bits) {
     break;
   }
   case 0b110: { // ORI
-      print_itype("ori", rd, rs1, immediate);
+    print_itype("ori", rd, rs1, immediate);
     cpu->registers[rd].set_next_val(cur_val | immediate);
     break;
   }
@@ -131,27 +128,44 @@ void CPU::exec_Rtype(CPU *cpu, std::bitset<32> bits) {
   int val1 = cpu->registers[rs1].get_cur_val();
   int val2 = cpu->registers[rs2].get_cur_val();
   switch (func3) {
-    case 0b000: // SUB
-      print_rtype("sub", rd, rs1, rs2);
-      cpu->registers[rd].set_next_val(val1- val2);
-      break;
-    case 0b111: // AND
-      print_rtype("and", rd, rs1, rs2);
-      cpu->registers[rd].set_next_val(val1 & val2);
-      break;
-    case 0b101: //SRA
-      print_rtype("sra", rd, rs1, rs2);
-      cpu->registers[rd].set_next_val(val1 >> val2);
-      break;
+  case 0b000: // SUB
+    print_rtype("sub", rd, rs1, rs2);
+    cpu->registers[rd].set_next_val(val1 - val2);
+    break;
+  case 0b111: // AND
+    print_rtype("and", rd, rs1, rs2);
+    cpu->registers[rd].set_next_val(val1 & val2);
+    break;
+  case 0b101: // SRA
+    print_rtype("sra", rd, rs1, rs2);
+    cpu->registers[rd].set_next_val(val1 >> val2);
+    break;
   }
 }
 
-void CPU::exec_Load(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for Load instructions (LBU, LW)
-}
+void CPU::exec_Load(CPU *cpu, std::bitset<32> bits) {}
 
 void CPU::exec_Store(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for Store instructions (SH, SW)
+  // (SH, SW)
+  // placeholder for Load instructions (LBU, LW)
+  bitset<3> b_func3 = sliceBits<3>(bits, 12, 3);
+  bitset<7> b_immediate_1 = sliceBits<7>(bits, 25, 7);
+  bitset<5> b_immediate_2 = sliceBits<5>(bits, 7, 5);
+
+  int func3 = cpu->immediate_gen(b_func3, true);
+  int imm_upper = cpu->immediate_gen(b_immediate_1, false);
+  int imm_lower = cpu->immediate_gen(b_immediate_2, false);
+  int imm = (imm_upper << 5) | imm_lower;
+  if (imm & 0x800) {   // check bit 11
+    imm |= 0xFFFFF000; // fill upper 20 bits with 1s
+  }
+
+  switch (func3) {
+  case 0b001: // SH
+  case 0b010: // SW
+  default:
+    cout << "Unknown func3 for store instruction" << endl;
+  }
 }
 
 void CPU::exec_Branch(CPU *cpu, std::bitset<32> bits) {
@@ -185,7 +199,7 @@ bitset<32> Instruction::fetch(char *&mem) {
     bitIndex += 8;
   }
 
-  // cout << "Instruction: "; 
+  // cout << "Instruction: ";
   // print_instr(bits);
   // cout << dec;
   return bits;

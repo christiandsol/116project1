@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <unordered_map>
 using namespace std;
 
 class Instruction {
@@ -18,11 +19,12 @@ public:
 
 class CPU {
 private:
-  int dmemory[4096]; // data memory byte addressable in little endian fashion;
+  unordered_map<uint32_t, char> memory_map;
+  char dmemory[4096]; // data memory byte addressable in little endian fashion;
   unsigned long PC;  // pc
 
 public:
-  CPU();
+  CPU(char* mem);
   unsigned long readPC();
   Register registers[30];
   void incPC();

@@ -1,5 +1,6 @@
 #pragma once
 #include "Register.h"
+#include "util.h"
 
 #include <bitset>
 #include <iostream>
@@ -21,46 +22,49 @@ class CPU {
 private:
   unordered_map<uint32_t, char> memory_map;
   char dmemory[4096]; // data memory byte addressable in little endian fashion;
-  unsigned long PC;  // pc
-  
+  unsigned long PC;   // pc
+
 public:
   struct Control {
     unsigned int jump;
     unsigned int branch;
-    unsigned int mem_read; 
-    unsigned int mem_to_reg; 
-    unsigned int alu_op; 
-    unsigned int mem_write; 
+    unsigned int mem_read;
+    unsigned int mem_to_reg;
+    unsigned int alu_op;
+    unsigned int mem_write;
     unsigned int alu_src;
     unsigned int reg_write;
   };
   Control ctrl;
-  CPU(char* mem);
+  CPU(char *mem);
   unsigned long readPC();
   Register registers[30];
-  void incPC();
-  using InstrFunc = void (*)(CPU *, std::bitset<32>);
+  using ALU = void (CPU::*)(int, int, int); // rd, read1, read2, func3
+  ALU read_instr(std::bitset<32> bits);
 
-  InstrFunc read_instr(std::bitset<32> bits);
   void set_controls(std::bitset<32> bits);
+  void incPC();
+  ALU ALU_ctrl(bitset<3> func3);
 
-  static void exec_Itype(CPU *cpu, std::bitset<32> bits);
-  static void exec_LUI(CPU *cpu, std::bitset<32> bits);
-  static void exec_Rtype(CPU *cpu, std::bitset<32> bits);
-  static void exec_Load(CPU *cpu, std::bitset<32> bits);
-  static void exec_Store(CPU *cpu, std::bitset<32> bits);
-  static void exec_Branch(CPU *cpu, std::bitset<32> bits);
-  static void exec_JALR(CPU *cpu, std::bitset<32> bits);
-
-  template <size_t N> int immediate_gen(std::bitset<N> bits, bool uns);
+  void exec_sub(int rd, int r1, int r2);
+  void exec_and(int rd, int r1, int r2);
+  void exec_sra(int rd, int r1, int r2);
+  void exec_addi(int rd, int r1, int r2);
+  void exec_sltiu(int rd, int r1, int r2);
+  void exec_ori(int rd, int r1, int r2);
+  void exec_Itype(int rd, int r1, int r2);
+  void exec_LUI(int rd, int r1, int r2);
+  void exec_Rtype(int rd, int r1, int r2);
+  // void exec_Load(int rd, int r1, int r2, int func3);
+  // void exec_Store(int rd, int r1, int r2, int func3);
+  // void exec_Branch(int rd, int r1, int r2, int func3);
+  // void exec_JALR(int rd, int r1, int r2, int func3);
+  template <size_t N> int to_int(std::bitset<N> bits);
+  int immediate_gen(std::bitset<32> bits);
+  // add other functions and objects here
 };
 
-// add other functions and objects here
-
-template <size_t N> int CPU::immediate_gen(std::bitset<N> bits, bool uns) {
-  if (uns) {
-    return static_cast<int>(bits.to_ulong());
-  }
+template <size_t N> int CPU::to_int(std::bitset<N> bits) {
   if (bits.test(N - 1)) {
     unsigned long value = bits.to_ulong();
     long signed_value = static_cast<long>(value | (~((1UL << N) - 1)));

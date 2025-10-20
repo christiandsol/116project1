@@ -12,3 +12,15 @@ void print_itype(std::string op, int rd, int rs1, int imm) {
 	}
 }
 
+
+int MUX(int input1, int input2, int sel) {
+    if (sel == 1){
+	return input1;
+    } else {
+	return input2;
+    }
+}
+
+int AND(int input1, int input2) {
+    return input1 & input2;
+}

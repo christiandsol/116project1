@@ -17,9 +17,16 @@ int Register::get_next_val() {
 	return next_val;
 }
 
+
+
 int Register::set_next_val(int new_val) {
-	cout << "Setting register to " << hex << new_val << dec << endl;
-	cur_val = new_val;
+	cout << "Setting register's next_val to " << hex << new_val << dec << endl;
+	next_val = new_val;
+	return new_val;
+}
+
+void Register::commit_next_val() {
+	cout << "Setting register to " << hex << next_val << dec << endl;
+	cur_val = next_val;
 	next_val = 0;
-	return cur_val;
 }

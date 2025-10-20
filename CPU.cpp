@@ -6,7 +6,7 @@
 
 CPU::CPU(char *mem) {
   PC = 0; // set PC to 0
-  ctrl.jump= 0;
+  ctrl.jump = 0;
   ctrl.branch = 0;
   ctrl.mem_read = 0;
   ctrl.mem_to_reg = 0;
@@ -24,8 +24,7 @@ void CPU::set_controls(bitset<32> bits) {
   int opcode_val = CPU::immediate_gen(opcode, true);
   switch (opcode_val) {
   case 0b0010011: // ADDI, ORI, SLTIU
-  case 0b0110111: // LUI
-    ctrl.jump= 0;
+    ctrl.jump = 0;
     ctrl.branch = 0;
     ctrl.mem_read = 0;
     ctrl.mem_to_reg = 0;
@@ -34,58 +33,68 @@ void CPU::set_controls(bitset<32> bits) {
     ctrl.alu_src = 1; // 1 = immediate
     ctrl.reg_write = 1;
     break;
-  case 0b0110011: // R-type (ADD, SUB, AND, SRA)
-    ctrl.jump= 0;
+  case 0b0110111: // LUI
+    ctrl.jump = 0;
     ctrl.branch = 0;
     ctrl.mem_read = 0;
     ctrl.mem_to_reg = 0;
     ctrl.alu_op = 0b010;
     ctrl.mem_write = 0;
+    ctrl.alu_src = 1; // 1 = immediate
+    ctrl.reg_write = 1;
+    break;
+  case 0b0110011: // R-type (ADD, SUB, AND, SRA)
+    ctrl.jump = 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b011;
+    ctrl.mem_write = 0;
     ctrl.alu_src = 0; // 1 = immediate
     ctrl.reg_write = 1;
     break;
   case 0b0000011: // LBU, LW
-    ctrl.jump= 0;
+    ctrl.jump = 0;
     ctrl.branch = 0;
     ctrl.mem_read = 1;
     ctrl.mem_to_reg = 1;
-    ctrl.alu_op = 0b011;
+    ctrl.alu_op = 0b100;
     ctrl.mem_write = 0;
     ctrl.alu_src = 1; // 1 = immediate
     ctrl.reg_write = 1;
     break;
   case 0b0100011: // SH, SW
-    ctrl.jump= 0;
+    ctrl.jump = 0;
     ctrl.branch = 0;
     ctrl.mem_read = 0;
     ctrl.mem_to_reg = 0;
-    ctrl.alu_op = 0b100;
+    ctrl.alu_op = 0b101;
     ctrl.mem_write = 1;
     ctrl.alu_src = 1; // 1 = immediate
     ctrl.reg_write = 0;
     break;
   case 0b1100011: // BNE
-    ctrl.jump= 0;
+    ctrl.jump = 0;
     ctrl.branch = 1;
-    ctrl.mem_read = 0;
-    ctrl.mem_to_reg = 0;
-    ctrl.alu_op = 0b101;
-    ctrl.mem_write = 0;
-    ctrl.alu_src = 1;
-    ctrl.reg_write = 0;
-    break;
-  case 0b1100111: // JALR
-    ctrl.jump= 1;
-    ctrl.branch = 0;
     ctrl.mem_read = 0;
     ctrl.mem_to_reg = 0;
     ctrl.alu_op = 0b110;
     ctrl.mem_write = 0;
     ctrl.alu_src = 1;
+    ctrl.reg_write = 0;
+    break;
+  case 0b1100111: // JALR
+    ctrl.jump = 1;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b111;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 1;
     ctrl.reg_write = 1;
     break;
   case 0b0000000: // terminate
-    ctrl.jump= 0;
+    ctrl.jump = 0;
     ctrl.branch = 0;
     ctrl.mem_read = 0;
     ctrl.mem_to_reg = 0;
@@ -100,168 +109,126 @@ void CPU::set_controls(bitset<32> bits) {
   }
 }
 
-CPU::InstrFunc CPU::read_instr(bitset<32> bits) {
-  bitset<7> opcode = sliceBits<7>(bits, 0, 7);
-  bitset<5> rs1 = sliceBits<5>(bits, 15, 5);
-  bitset<5> rs2 = sliceBits<5>(bits, 20, 5);
-  bitset<5> rd = sliceBits<5>(bits, 7, 5);
-  bitset<12> imm = sliceBits<12>(bits, 20, 12);
-
-  // cout << "opcode: " << opcode << endl;
-  // cout << "rs1:    " << rs1 << endl;
-  // cout << "rs2:    " << rs2 << endl;
-  // cout << "rd:     " << rd << endl;
-  // cout << "imm:     " << imm << endl;
-
-  int opcode_val = CPU::immediate_gen(opcode, true);
-  InstrFunc func = nullptr;
-
-  switch (opcode_val) {
-  case 0b0010011: // ADDI, ORI, SLTIU
-    func = &CPU::exec_Itype;
+CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
+  if (ctrl.alu_op == 0b010) {
+    return &CPU::exec_LUI;
+  }
+  ALU func = nullptr;
+  int lower = immediate_gen(func3, false);
+  int val = (ctrl.alu_op << 3) | lower;
+  switch (val) {
+  case 0b001000: // ADDI
+    func = &CPU::exec_addi;
     break;
-  case 0b0110111: // LUI
-    func = &CPU::exec_LUI;
+  case 0b001110: // ORI
+    func = &CPU::exec_ori;
     break;
-  case 0b0110011: // R-type (ADD, SUB, AND, SRA)
-    func = &CPU::exec_Rtype;
+  case 0b011011: // SLTIU
+    func = &CPU::exec_sltiu;
     break;
-  case 0b0000011: // LBU, LW
-    func = &CPU::exec_Load;
+  case 0b011101: // SRA
+    func = &CPU::exec_sra;
     break;
-  case 0b0100011: // SH, SW
-    func = &CPU::exec_Store;
+  case 0b011000: // SUB
+    func = &CPU::exec_sub;
     break;
-  case 0b1100011: // BNE
-    func = &CPU::exec_Branch;
+  case 0b011111: // AND
+    func = &CPU::exec_and;
     break;
-  case 0b1100111: // JALR
-    func = &CPU::exec_JALR;
-    break;
-  case 0b0000000: // terminate
-    func = nullptr;
-    break;
+  // case 0x100:
+  // case 0x101:
+  // case 0x110:
+  // case 0x111:
+  // case 0x000:
   default:
-    cerr << "Unknown opcode: " << opcode_val << endl;
     break;
   }
-  return func;
 }
+
+// CPU::ALU CPU::read_instr(bitset<32> bits) {
+//   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
+//   bitset<5> rs1 = sliceBits<5>(bits, 15, 5);
+//   bitset<5> rs2 = sliceBits<5>(bits, 20, 5);
+//   bitset<5> rd = sliceBits<5>(bits, 7, 5);
+//   bitset<12> imm = sliceBits<12>(bits, 20, 12);
+//
+//   // cout << "opcode: " << opcode << endl;
+//   // cout << "rs1:    " << rs1 << endl;
+//   // cout << "rs2:    " << rs2 << endl;
+//   // cout << "rd:     " << rd << endl;
+//   // cout << "imm:     " << imm << endl;
+//
+//   int opcode_val = CPU::immediate_gen(opcode, true);
+//   ALU func = nullptr;
+//
+//   switch (opcode_val) {
+//   case 0b0010011: // ADDI, ORI, SLTIU
+//     func = &CPU::exec_Itype;
+//     break;
+//   case 0b0110111: // LUI
+//     func = &CPU::exec_LUI;
+//     break;
+//   case 0b0110011: // R-type (ADD, SUB, AND, SRA)
+//     func = &CPU::exec_Rtype;
+//     break;
+//   case 0b0000011: // LBU, LW
+//     func = &CPU::exec_Ityp;
+//     break;
+//   case 0b0100011: // SH, SW
+//     func = &CPU::exec_Store;
+//     break;
+//   case 0b1100011: // BNE
+//     func = &CPU::exec_Branch;
+//     break;
+//   case 0b1100111: // JALR
+//     func = &CPU::exec_JALR;
+//     break;
+//   case 0b0000000: // terminate
+//     func = nullptr;
+//     break;
+//   default:
+//     cerr << "Unknown opcode: " << opcode_val << endl;
+//     break;
+//   }
+//   return func;
+// }
 
 // In CPU.cpp
 
-void CPU::exec_Itype(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for I-type instructions (ADDI, ORI, SLTIU)
-  // ADDI -> 000
-  // SLTIU -> 011
-  // ORI -> 110
-  bitset<3> b_func3 = sliceBits<3>(bits, 12, 3);
-  bitset<12> b_immediate = sliceBits<12>(bits, 20, 12);
-  bitset<5> b_rs1 = sliceBits<5>(bits, 15, 5);
-  bitset<5> b_rd = sliceBits<5>(bits, 7, 5);
-  int func3 = cpu->immediate_gen(b_func3, true);
-  int immediate = cpu->immediate_gen(b_immediate, false);
-  int rs1 = cpu->immediate_gen(b_rs1, true);
-  int rd = cpu->immediate_gen(b_rd, true);
-  int cur_val = cpu->registers[rs1].get_cur_val();
-  switch (func3) {
-  case 0b000: { // ADDI
-    print_itype("addi", rd, rs1, immediate);
-    cpu->registers[rd].set_next_val(cur_val + immediate);
-    break;
-  }
-  case 0b011: { // SLTIU
-    int uns_imm = cpu->immediate_gen(b_immediate, true);
-    print_itype("sltiu", rd, rs1, uns_imm);
-    if (cpu->registers[rs1].get_cur_val() < uns_imm) {
-      cpu->registers[rd].set_next_val(1);
-    } else {
-      cpu->registers[rd].set_next_val(0);
-    }
-    break;
-  }
-  case 0b110: { // ORI
-    print_itype("ori", rd, rs1, immediate);
-    cpu->registers[rd].set_next_val(cur_val | immediate);
-    break;
-  }
-  default:
-    cerr << "Unknown opcode: " << func3 << endl;
-    break;
+void CPU::exec_addi(int rd, int r1, int r2) {
+  print_itype("addi", rd, r1, r2);
+  registers[rd].set_next_val(r1 + r2);
+}
+void CPU::exec_sltiu(int rd, int r1, int r2) {
+  print_itype("sltiu", rd, r1, r2);
+  if (registers[r1].get_cur_val() < r2) {
+    registers[rd].set_next_val(1);
+  } else {
+    registers[rd].set_next_val(0);
   }
 }
-
-void CPU::exec_LUI(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for LUI instruction
-  bitset<20> b_immediate = sliceBits<20>(bits, 12, 31);
-  bitset<5> b_rd = sliceBits<5>(bits, 7, 5);
-  int immediate = cpu->immediate_gen(b_immediate, false);
-  int rd = cpu->immediate_gen(b_rd, true);
-  print_itype("lui", rd, -1, immediate);
-  immediate <<= 12;
-  cpu->registers[rd].set_next_val(immediate);
+void CPU::exec_ori(int rd, int r1, int r2) {
+  print_itype("ori", rd, r1, r2);
+  registers[rd].set_next_val(r1 | r2);
 }
 
-void CPU::exec_Rtype(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for R-type instructions (SUB, AND, SRA)
-  bitset<5> b_rs1 = sliceBits<5>(bits, 15, 5);
-  bitset<5> b_rs2 = sliceBits<5>(bits, 20, 5);
-  bitset<5> b_rd = sliceBits<5>(bits, 7, 5);
-  bitset<3> b_func3 = sliceBits<3>(bits, 12, 3);
-  // bitset<7> b_func7 = sliceBits<7>(bits, 12, 7);
-  int rs1 = cpu->immediate_gen(b_rs1, true);
-  int rs2 = cpu->immediate_gen(b_rs2, true);
-  int rd = cpu->immediate_gen(b_rd, true);
-  int func3 = cpu->immediate_gen(b_func3, true);
-  int val1 = cpu->registers[rs1].get_cur_val();
-  int val2 = cpu->registers[rs2].get_cur_val();
-  switch (func3) {
-  case 0b000: // SUB
-    print_rtype("sub", rd, rs1, rs2);
-    cpu->registers[rd].set_next_val(val1 - val2);
-    break;
-  case 0b111: // AND
-    print_rtype("and", rd, rs1, rs2);
-    cpu->registers[rd].set_next_val(val1 & val2);
-    break;
-  case 0b101: // SRA
-    print_rtype("sra", rd, rs1, rs2);
-    cpu->registers[rd].set_next_val(val1 >> val2);
-    break;
-  }
+void CPU::exec_LUI(int rd, int r1, int r2) {
+  print_itype("lui", rd, -1, r2);
+  r2 <<= 12;
+  registers[rd].set_next_val(r2);
 }
 
-void CPU::exec_Load(CPU *cpu, std::bitset<32> bits) {}
-
-void CPU::exec_Store(CPU *cpu, std::bitset<32> bits) {
-  // (SH, SW)
-  // placeholder for Load instructions (LBU, LW)
-  bitset<3> b_func3 = sliceBits<3>(bits, 12, 3);
-  bitset<7> b_immediate_1 = sliceBits<7>(bits, 25, 7);
-  bitset<5> b_immediate_2 = sliceBits<5>(bits, 7, 5);
-
-  int func3 = cpu->immediate_gen(b_func3, true);
-  int imm_upper = cpu->immediate_gen(b_immediate_1, false);
-  int imm_lower = cpu->immediate_gen(b_immediate_2, false);
-  int imm = (imm_upper << 5) | imm_lower;
-  if (imm & 0x800) {   // check bit 11
-    imm |= 0xFFFFF000; // fill upper 20 bits with 1s
-  }
-
-  switch (func3) {
-  case 0b001: // SH
-  case 0b010: // SW
-  default:
-    cout << "Unknown func3 for store instruction" << endl;
-  }
+void CPU::exec_sub(int rd, int r1, int r2) {
+  print_rtype("sub", rd, r1, r2);
+  registers[rd].set_next_val(r1 - r2);
 }
-
-void CPU::exec_Branch(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for Branch instructions (BNE)
+void CPU::exec_and(int rd, int r1, int r2) {
+  print_rtype("and", rd, r1, r2);
+  registers[rd].set_next_val(r1 & r2);
 }
-
-void CPU::exec_JALR(CPU *cpu, std::bitset<32> bits) {
-  // placeholder for JALR instruction
+void CPU::exec_sra(int rd, int r1, int r2) {
+  print_rtype("sra", rd, r1, r2);
+  registers[rd].set_next_val(r1 >> r2);
 }
 
 Instruction::Instruction() {}
@@ -297,4 +264,51 @@ void Instruction::print_instr(bitset<32> instr) {
   unsigned long val = instr.to_ulong();
   cout << hex << val << endl;
   cout << dec;
+}
+
+int CPU::immediate_gen(std::bitset<32> bits) {
+  bitset<7> opcode = sliceBits<7>(bits, 0, 7);
+  bitset<12> b_imm_i = sliceBits<12>(bits, 20, 12);
+  bitset<20> b_imm_lui = sliceBits<20>(bits, 12, 20);
+  bitset<5> b_imm_s_lower = sliceBits<5>(bits, 7, 7);
+  bitset<7> b_imm_s_upper = sliceBits<7>(bits, 25, 7);
+  int opcode_val = to_int(opcode);
+  int imm_i = to_int(b_imm_i);
+  int imm_lui = to_int(b_imm_lui);
+  int imm_s_upper = to_int(b_imm_s_upper);
+  int imm_s_lower = to_int(b_imm_s_lower);
+  int imm_s = (imm_s_upper << 5 | imm_s_lower);
+  int imm_12 = (bits[31] ? -1 : 0) << 12;              // sign bit
+  int imm_10_5 = sliceBits<6>(bits, 25, 6).to_ulong(); // bits 30-25
+  int imm_4_1 = sliceBits<4>(bits, 8, 4).to_ulong();   // bits 11-8
+  int imm_11 = bits[7] ? 1 : 0;                        // bit 7
+  int imm_b = (imm_12) | (imm_11 << 11) | (imm_10_5 << 5) | (imm_4_1 << 1);
+  if (imm_b & (1 << 12)) {
+    imm_b |= 0xFFFFE000;
+  }
+
+  switch (opcode_val) {
+  case 0b0010011: // ADDI, ORI, SLTIU
+    return imm_i;
+    break;
+  case 0b0110111: // LUI
+    imm_lui;
+    break;
+  case 0b0000011: // LBU, LW
+    return imm_i;
+    break;
+  case 0b0100011: // SH, SW
+    return imm_s;
+    break;
+  case 0b1100011: // BNE
+    return imm_b;
+    break;
+  case 0b1100111: // JALR
+    imm_i;
+    break;
+  default:
+    cerr << "Not immediate type: " << opcode_val << endl;
+    return -1;
+    break;
+  }
 }

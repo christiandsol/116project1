@@ -19,3 +19,4 @@ std::bitset<N> sliceBits(const std::bitset<M> &bits, size_t start,
 
 void print_rtype(std::string op, int rd, int rs1, int rs2);
 void print_itype(std::string op, int rd, int rs1, int imm);
+int MUX(int input1, int input2, int sel);

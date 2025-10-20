@@ -2,6 +2,7 @@
 #include "util.h"
 #include <cstddef>
 #include <sstream>
+#include <valarray>
 
 CPU::CPU() {
   PC = 0;                        // set PC to 0
@@ -19,13 +20,15 @@ CPU::InstrFunc CPU::read_instr(bitset<32> bits) {
   bitset<5> rs1 = sliceBits<5>(bits, 15, 5);
   bitset<5> rs2 = sliceBits<5>(bits, 20, 5);
   bitset<5> rd = sliceBits<5>(bits, 7, 5);
+  bitset<12> imm = sliceBits<12>(bits, 20, 12);
 
-  cout << "opcode: " << opcode << endl;
-  cout << "rs1:    " << rs1 << endl;
-  cout << "rs2:    " << rs2 << endl;
-  cout << "rd:     " << rd << endl;
+  // cout << "opcode: " << opcode << endl;
+  // cout << "rs1:    " << rs1 << endl;
+  // cout << "rs2:    " << rs2 << endl;
+  // cout << "rd:     " << rd << endl;
+  // cout << "imm:     " << imm << endl;
 
-  unsigned long opcode_val = opcode.to_ulong();
+  int opcode_val = CPU::immediate_gen(opcode, true);
   InstrFunc func = nullptr;
 
   switch (opcode_val) {
@@ -54,7 +57,7 @@ CPU::InstrFunc CPU::read_instr(bitset<32> bits) {
     func = nullptr;
     break;
   default:
-    cerr << "Unknown opcode: " << opcode << endl;
+    cerr << "Unknown opcode: " << opcode_val << endl;
     break;
   }
   return func;
@@ -67,22 +70,24 @@ void CPU::exec_Itype(CPU *cpu, std::bitset<32> bits) {
   // ADDI -> 000
   // SLTIU -> 011
   // ORI -> 110
-  bitset<3> v_func3 = sliceBits<3>(bits, 12, 3);
+  bitset<3> b_func3 = sliceBits<3>(bits, 12, 3);
   bitset<12> b_immediate = sliceBits<12>(bits, 20, 12);
   bitset<5> b_rs1 = sliceBits<5>(bits, 15, 5);
   bitset<5> b_rd = sliceBits<5>(bits, 7, 5);
-  int func3 = cpu->immediate_gen(b_rs1, false);
+  int func3 = cpu->immediate_gen(b_func3, true);
   int immediate = cpu->immediate_gen(b_immediate, false);
   int rs1 = cpu->immediate_gen(b_rs1, true);
   int rd = cpu->immediate_gen(b_rd, true);
   int cur_val = cpu->registers[rs1].get_cur_val();
   switch (func3) {
   case 0b000: { // ADDI
+    print_itype("addi", rd, rs1, immediate);
     cpu->registers[rd].set_next_val(cur_val + immediate);
     break;
   }
   case 0b011: { // SLTIU
     int uns_imm = cpu->immediate_gen(b_immediate, true);
+    print_itype("sltiu", rd, rs1, uns_imm);
     if (cpu->registers[rs1].get_cur_val() < uns_imm) {
       cpu->registers[rd].set_next_val(1);
     } else {
@@ -91,6 +96,7 @@ void CPU::exec_Itype(CPU *cpu, std::bitset<32> bits) {
     break;
   }
   case 0b110: { // ORI
+      print_itype("ori", rd, rs1, immediate);
     cpu->registers[rd].set_next_val(cur_val | immediate);
     break;
   }
@@ -106,6 +112,7 @@ void CPU::exec_LUI(CPU *cpu, std::bitset<32> bits) {
   bitset<5> b_rd = sliceBits<5>(bits, 7, 5);
   int immediate = cpu->immediate_gen(b_immediate, false);
   int rd = cpu->immediate_gen(b_rd, true);
+  print_itype("lui", rd, -1, immediate);
   immediate <<= 12;
   cpu->registers[rd].set_next_val(immediate);
 }
@@ -121,15 +128,20 @@ void CPU::exec_Rtype(CPU *cpu, std::bitset<32> bits) {
   int rs2 = cpu->immediate_gen(b_rs2, true);
   int rd = cpu->immediate_gen(b_rd, true);
   int func3 = cpu->immediate_gen(b_func3, true);
+  int val1 = cpu->registers[rs1].get_cur_val();
+  int val2 = cpu->registers[rs2].get_cur_val();
   switch (func3) {
     case 0b000: // SUB
-      cpu->registers[rd].set_next_val(rs1 - rs2);
+      print_rtype("sub", rd, rs1, rs2);
+      cpu->registers[rd].set_next_val(val1- val2);
       break;
     case 0b111: // AND
-      cpu->registers[rd].set_next_val(rs1 & rs2);
+      print_rtype("and", rd, rs1, rs2);
+      cpu->registers[rd].set_next_val(val1 & val2);
       break;
     case 0b101: //SRA
-      cpu->registers[rd].set_next_val(rs1 >> rs2);
+      print_rtype("sra", rd, rs1, rs2);
+      cpu->registers[rd].set_next_val(val1 >> val2);
       break;
   }
 }
@@ -173,13 +185,14 @@ bitset<32> Instruction::fetch(char *&mem) {
     bitIndex += 8;
   }
 
-  cout << "bits: " << bits << endl;
-  cout << "Instruction: "; 
-  print_instr(bits);
+  // cout << "Instruction: "; 
+  // print_instr(bits);
+  // cout << dec;
   return bits;
 }
 
 void Instruction::print_instr(bitset<32> instr) {
   unsigned long val = instr.to_ulong();
   cout << hex << val << endl;
+  cout << dec;
 }

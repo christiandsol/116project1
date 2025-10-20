@@ -42,6 +42,7 @@ public:
   using InstrFunc = void (*)(CPU *, std::bitset<32>);
 
   InstrFunc read_instr(std::bitset<32> bits);
+  void set_controls(std::bitset<32> bits);
 
   static void exec_Itype(CPU *cpu, std::bitset<32> bits);
   static void exec_LUI(CPU *cpu, std::bitset<32> bits);

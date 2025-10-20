@@ -22,8 +22,19 @@ private:
   unordered_map<uint32_t, char> memory_map;
   char dmemory[4096]; // data memory byte addressable in little endian fashion;
   unsigned long PC;  // pc
-
+  
 public:
+  struct Control {
+    unsigned int jump;
+    unsigned int branch;
+    unsigned int mem_read; 
+    unsigned int mem_to_reg; 
+    unsigned int alu_op; 
+    unsigned int mem_write; 
+    unsigned int alu_src;
+    unsigned int reg_write;
+  };
+  Control ctrl;
   CPU(char* mem);
   unsigned long readPC();
   Register registers[30];

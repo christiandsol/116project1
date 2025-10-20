@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 		//fetch
 		bitset<32> instr = myInst.fetch(mem);
 		// myInst.print_instr(instr);
-		CPU::InstrFunc func = myCPU.read_instr(instr);
+		CPU::InstrFunc func = myCPU.set_controls(instr);
 		// decode
 		// ... 
 		myCPU.incPC();

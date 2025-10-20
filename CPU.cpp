@@ -3,14 +3,102 @@
 #include <bitset>
 #include <cstddef>
 #include <sstream>
-#include <valarray>
 
 CPU::CPU(char *mem) {
   PC = 0; // set PC to 0
+  ctrl.jump= 0;
+  ctrl.branch = 0;
+  ctrl.mem_read = 0;
+  ctrl.mem_to_reg = 0;
+  ctrl.alu_op = 0;
+  ctrl.mem_write = 0;
+  ctrl.alu_src = 0;
+  ctrl.reg_write = 0;
 }
 
 unsigned long CPU::readPC() { return PC; }
 void CPU::incPC() { PC++; }
+
+void CPU::set_controls(bitset<32> bits) {
+  bitset<7> opcode = sliceBits<7>(bits, 0, 7);
+  int opcode_val = CPU::immediate_gen(opcode, true);
+  switch (opcode_val) {
+  case 0b0010011: // ADDI, ORI, SLTIU
+  case 0b0110111: // LUI
+    ctrl.jump= 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b001;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 1; // 1 = immediate
+    ctrl.reg_write = 1;
+    break;
+  case 0b0110011: // R-type (ADD, SUB, AND, SRA)
+    ctrl.jump= 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b010;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 0; // 1 = immediate
+    ctrl.reg_write = 1;
+    break;
+  case 0b0000011: // LBU, LW
+    ctrl.jump= 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 1;
+    ctrl.mem_to_reg = 1;
+    ctrl.alu_op = 0b011;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 1; // 1 = immediate
+    ctrl.reg_write = 1;
+    break;
+  case 0b0100011: // SH, SW
+    ctrl.jump= 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b100;
+    ctrl.mem_write = 1;
+    ctrl.alu_src = 1; // 1 = immediate
+    ctrl.reg_write = 0;
+    break;
+  case 0b1100011: // BNE
+    ctrl.jump= 0;
+    ctrl.branch = 1;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b101;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 1;
+    ctrl.reg_write = 0;
+    break;
+  case 0b1100111: // JALR
+    ctrl.jump= 1;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b110;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 1;
+    ctrl.reg_write = 1;
+    break;
+  case 0b0000000: // terminate
+    ctrl.jump= 0;
+    ctrl.branch = 0;
+    ctrl.mem_read = 0;
+    ctrl.mem_to_reg = 0;
+    ctrl.alu_op = 0b000;
+    ctrl.mem_write = 0;
+    ctrl.alu_src = 0;
+    ctrl.reg_write = 0;
+    break;
+  default:
+    cerr << "Unknown opcode: " << opcode_val << endl;
+    break;
+  }
+}
 
 CPU::InstrFunc CPU::read_instr(bitset<32> bits) {
   bitset<7> opcode = sliceBits<7>(bits, 0, 7);

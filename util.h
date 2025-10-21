@@ -20,3 +20,16 @@ std::bitset<N> sliceBits(const std::bitset<M> &bits, size_t start,
 void print_rtype(std::string op, int rd, int rs1, int rs2);
 void print_itype(std::string op, int rd, int rs1, int imm);
 int MUX(int input1, int input2, int sel);
+
+template <size_t N> int to_int(std::bitset<N> bits, bool us) {
+  if (us) {
+    return static_cast<int>(bits.to_ulong());
+  }
+  if (bits.test(N - 1)) {
+    unsigned long value = bits.to_ulong();
+    long signed_value = static_cast<long>(value | (~((1UL << N) - 1)));
+    return static_cast<int>(signed_value);
+  } else {
+    return static_cast<int>(bits.to_ulong());
+  }
+}

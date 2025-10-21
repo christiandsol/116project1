@@ -7,14 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include <unordered_map>
-using namespace std;
+#include <unordered_map> using namespace std;
 
 class Instruction {
 public:
   bitset<32> instr; // instruction
   Instruction();    // constructor
-  bitset<32> fetch(char *&mem);
+  bitset<32> fetch(char *&mem, unsigned long &PC);
   void print_instr(bitset<32> instr);
 };
 
@@ -22,7 +21,6 @@ class CPU {
 private:
   unordered_map<uint32_t, char> memory_map;
   char dmemory[4096]; // data memory byte addressable in little endian fashion;
-  unsigned long PC;   // pc
 
 public:
   struct Control {
@@ -35,6 +33,11 @@ public:
     unsigned int alu_src;
     unsigned int reg_write;
   };
+  struct PC {
+    unsigned long cur_pc; 
+    unsigned long next_pc;
+  };
+  PC PC;
   Control ctrl;
   CPU(char *mem);
   unsigned long readPC();
@@ -59,20 +62,7 @@ public:
   // void exec_Store(int rd, int r1, int r2, int func3);
   // void exec_Branch(int rd, int r1, int r2, int func3);
   // void exec_JALR(int rd, int r1, int r2, int func3);
-  template <size_t N> int to_int(std::bitset<N> bits, bool us);
   int immediate_gen(std::bitset<32> bits);
   // add other functions and objects here
 };
 
-template <size_t N> int CPU::to_int(std::bitset<N> bits, bool us) {
-  if (us) {
-    return static_cast<int>(bits.to_ulong());
-  }
-  if (bits.test(N - 1)) {
-    unsigned long value = bits.to_ulong();
-    long signed_value = static_cast<long>(value | (~((1UL << N) - 1)));
-    return static_cast<int>(signed_value);
-  } else {
-    return static_cast<int>(bits.to_ulong());
-  }
-}

@@ -5,7 +5,8 @@
 #include <sstream>
 
 CPU::CPU(char *mem) {
-  PC = 0; // set PC to 0
+  PC.cur_pc = 0;
+  PC.next_pc = 0;
   ctrl.jump = 0;
   ctrl.branch = 0;
   ctrl.mem_read = 0;
@@ -16,12 +17,10 @@ CPU::CPU(char *mem) {
   ctrl.reg_write = 0;
 }
 
-unsigned long CPU::readPC() { return PC; }
-void CPU::incPC() { PC++; }
 
 void CPU::set_controls(bitset<32> bits) {
   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
-  int opcode_val = CPU::to_int(opcode, false);
+  int opcode_val = to_int(opcode, false);
   switch (opcode_val) {
   case 0b0010011: // ADDI, ORI, SLTIU
     ctrl.jump = 0;
@@ -195,31 +194,28 @@ void CPU::exec_sra(int rd, int r1, int r2) {
 
 Instruction::Instruction() {}
 
-bitset<32> Instruction::fetch(char *&mem) {
-  bitset<32> bits;
-  size_t bitIndex = 0;
+bitset<32> Instruction::fetch(char *&mem, unsigned long &next_PC) {
+    bitset<32> bits;
+    size_t bitIndex = 0;
 
-  for (int byteIdx = 0; byteIdx < 4; ++byteIdx) {
-    char high = mem[0];
-    char low = mem[1];
+    for (int byteIdx = 0; byteIdx < 4; ++byteIdx) {
+        char high = mem[next_PC];
+        char low  = mem[next_PC + 1];
 
-    unsigned int byteVal = 0;
-    stringstream ss;
-    ss << hex << high << low;
-    ss >> byteVal;
+        unsigned int byteVal = 0;
+        stringstream ss;
+        ss << hex << high << low;
+        ss >> byteVal;
 
-    for (int bit = 0; bit < 8; ++bit) {
-      bits.set(bitIndex + bit, (byteVal >> bit) & 1);
+        for (int bit = 0; bit < 8; ++bit) {
+            bits.set(bitIndex + bit, (byteVal >> bit) & 1);
+        }
+
+        next_PC += 2;        // increment next_PC by 2 chars (1 byte)
+        bitIndex += 8;  // increment bit position by 8 bits (1 byte)
     }
 
-    mem += 2;
-    bitIndex += 8;
-  }
-
-  // cout << "Instruction: ";
-  // print_instr(bits);
-  // cout << dec;
-  return bits;
+    return bits;
 }
 
 void Instruction::print_instr(bitset<32> instr) {

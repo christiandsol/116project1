@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall
 TARGET = cpusim
-SRC = cpusim.cpp CPU.cpp Register.cpp util.cpp
+SRC = cpusim.cpp util.cpp CPU.cpp Register.cpp Memory.cpp
 OBJ = $(SRC:.cpp=.o)
 
 all: $(TARGET)

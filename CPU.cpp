@@ -140,8 +140,11 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
   // case 0x101:
   // case 0x110:
   // case 0x111:
-  // case 0x000:
+  case 0x00000:
+    func = nullptr;
+    break;
   default:
+    func = &CPU::exec_addi;
     cout << "HERE 1" << endl;
     break;
   }

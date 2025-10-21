@@ -105,8 +105,10 @@ int main(int argc, char* argv[])
 
 		//set up memory
 		myMemory.set_controls(instr);
-
-
+		if (myCPU.ctrl.mem_write) {
+			cout << "OUCH" << endl;
+		}
+		// myMemory.execute_mem(int addr, int value);
 
 		// write to registers if flag set
 		if (myCPU.ctrl.reg_write) {

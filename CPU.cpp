@@ -17,7 +17,6 @@ CPU::CPU(char *mem) {
   ctrl.reg_write = 0;
 }
 
-
 void CPU::set_controls(bitset<32> bits) {
   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
   int opcode_val = to_int(opcode, false);
@@ -116,7 +115,6 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
   int lower = to_int(func3, true);
 
   int val = (ctrl.alu_op << 3) | lower;
-  cout << "VAL: " << val << endl;
   switch (val) {
   case 0b001000: // ADDI
     func = &CPU::exec_addi;
@@ -145,7 +143,7 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
     break;
   default:
     func = &CPU::exec_addi;
-    cout << "HERE 1" << endl;
+    // cout << "HERE 1" << endl;
     break;
   }
   return func;
@@ -155,12 +153,14 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
 
 void CPU::exec_addi(int rd, int r1, int r2) {
   cout << "addi ";
-  // print_itype("addi", rd, r1, r2);
+  // if (ctrl.mem_write) {
+  //   registers[r1].set_next_val(r1 + r2);
+  // } else {
   registers[rd].set_next_val(r1 + r2);
 }
 void CPU::exec_sltiu(int rd, int r1, int r2) {
   cout << "sltiu ";
-  if (r1< r2) {
+  if (r1 < r2) {
     registers[rd].set_next_val(1);
   } else {
     registers[rd].set_next_val(0);
@@ -198,27 +198,27 @@ void CPU::exec_sra(int rd, int r1, int r2) {
 Instruction::Instruction() {}
 
 bitset<32> Instruction::fetch(char *&mem, unsigned long &next_PC) {
-    bitset<32> bits;
-    size_t bitIndex = 0;
+  bitset<32> bits;
+  size_t bitIndex = 0;
 
-    for (int byteIdx = 0; byteIdx < 4; ++byteIdx) {
-        char high = mem[next_PC];
-        char low  = mem[next_PC + 1];
+  for (int byteIdx = 0; byteIdx < 4; ++byteIdx) {
+    char high = mem[next_PC];
+    char low = mem[next_PC + 1];
 
-        unsigned int byteVal = 0;
-        stringstream ss;
-        ss << hex << high << low;
-        ss >> byteVal;
+    unsigned int byteVal = 0;
+    stringstream ss;
+    ss << hex << high << low;
+    ss >> byteVal;
 
-        for (int bit = 0; bit < 8; ++bit) {
-            bits.set(bitIndex + bit, (byteVal >> bit) & 1);
-        }
-
-        next_PC += 2;        // increment next_PC by 2 chars (1 byte)
-        bitIndex += 8;  // increment bit position by 8 bits (1 byte)
+    for (int bit = 0; bit < 8; ++bit) {
+      bits.set(bitIndex + bit, (byteVal >> bit) & 1);
     }
 
-    return bits;
+    next_PC += 2;  // increment next_PC by 2 chars (1 byte)
+    bitIndex += 8; // increment bit position by 8 bits (1 byte)
+  }
+
+  return bits;
 }
 
 void Instruction::print_instr(bitset<32> instr) {
@@ -231,7 +231,7 @@ int CPU::immediate_gen(std::bitset<32> bits) {
   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
   bitset<12> b_imm_i = sliceBits<12>(bits, 20, 12);
   bitset<20> b_imm_lui = sliceBits<20>(bits, 12, 20);
-  bitset<5> b_imm_s_lower = sliceBits<5>(bits, 7, 7);
+  bitset<5> b_imm_s_lower = sliceBits<5>(bits, 7, 5);
   bitset<7> b_imm_s_upper = sliceBits<7>(bits, 25, 7);
   int opcode_val = to_int(opcode, false);
   int imm_i = to_int(b_imm_i, false);

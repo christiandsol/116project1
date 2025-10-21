@@ -105,13 +105,13 @@ int main(int argc, char* argv[])
 
 		//set up memory
 		myMemory.set_controls(instr);
-		if (myCPU.ctrl.mem_write) {
-			cout << "OUCH" << endl;
-		}
-		// myMemory.execute_mem(int addr, int value);
+
+		int reg_write_mem = myMemory.execute_mem(imm + myCPU.registers[rs1].get_cur_val(), myCPU.registers[rs2].get_cur_val());
 
 		// write to registers if flag set
-		if (myCPU.ctrl.reg_write) {
+		if (myCPU.ctrl.reg_write && rd != 0) {
+			int reg_commit = MUX(reg_write_mem, myCPU.registers[rd].get_next_val(), myCPU.ctrl.mem_to_reg);
+			myCPU.registers[rd].set_next_val(reg_commit);
 			myCPU.registers[rd].commit_next_val();
 		}
 	}

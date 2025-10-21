@@ -21,7 +21,7 @@ void CPU::incPC() { PC++; }
 
 void CPU::set_controls(bitset<32> bits) {
   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
-  int opcode_val = CPU::immediate_gen(opcode, true);
+  int opcode_val = CPU::to_int(opcode, false);
   switch (opcode_val) {
   case 0b0010011: // ADDI, ORI, SLTIU
     ctrl.jump = 0;
@@ -114,8 +114,10 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
     return &CPU::exec_LUI;
   }
   ALU func = nullptr;
-  int lower = immediate_gen(func3, false);
+  int lower = to_int(func3, true);
+
   int val = (ctrl.alu_op << 3) | lower;
+  cout << "VAL: " << val << endl;
   switch (val) {
   case 0b001000: // ADDI
     func = &CPU::exec_addi;
@@ -123,7 +125,7 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
   case 0b001110: // ORI
     func = &CPU::exec_ori;
     break;
-  case 0b011011: // SLTIU
+  case 0b001011: // SLTIU
     func = &CPU::exec_sltiu;
     break;
   case 0b011101: // SRA
@@ -141,93 +143,53 @@ CPU::ALU CPU::ALU_ctrl(bitset<3> func3) {
   // case 0x111:
   // case 0x000:
   default:
+    cout << "HERE 1" << endl;
     break;
   }
+  return func;
 }
-
-// CPU::ALU CPU::read_instr(bitset<32> bits) {
-//   bitset<7> opcode = sliceBits<7>(bits, 0, 7);
-//   bitset<5> rs1 = sliceBits<5>(bits, 15, 5);
-//   bitset<5> rs2 = sliceBits<5>(bits, 20, 5);
-//   bitset<5> rd = sliceBits<5>(bits, 7, 5);
-//   bitset<12> imm = sliceBits<12>(bits, 20, 12);
-//
-//   // cout << "opcode: " << opcode << endl;
-//   // cout << "rs1:    " << rs1 << endl;
-//   // cout << "rs2:    " << rs2 << endl;
-//   // cout << "rd:     " << rd << endl;
-//   // cout << "imm:     " << imm << endl;
-//
-//   int opcode_val = CPU::immediate_gen(opcode, true);
-//   ALU func = nullptr;
-//
-//   switch (opcode_val) {
-//   case 0b0010011: // ADDI, ORI, SLTIU
-//     func = &CPU::exec_Itype;
-//     break;
-//   case 0b0110111: // LUI
-//     func = &CPU::exec_LUI;
-//     break;
-//   case 0b0110011: // R-type (ADD, SUB, AND, SRA)
-//     func = &CPU::exec_Rtype;
-//     break;
-//   case 0b0000011: // LBU, LW
-//     func = &CPU::exec_Ityp;
-//     break;
-//   case 0b0100011: // SH, SW
-//     func = &CPU::exec_Store;
-//     break;
-//   case 0b1100011: // BNE
-//     func = &CPU::exec_Branch;
-//     break;
-//   case 0b1100111: // JALR
-//     func = &CPU::exec_JALR;
-//     break;
-//   case 0b0000000: // terminate
-//     func = nullptr;
-//     break;
-//   default:
-//     cerr << "Unknown opcode: " << opcode_val << endl;
-//     break;
-//   }
-//   return func;
-// }
 
 // In CPU.cpp
 
 void CPU::exec_addi(int rd, int r1, int r2) {
-  print_itype("addi", rd, r1, r2);
+  cout << "addi ";
+  // print_itype("addi", rd, r1, r2);
   registers[rd].set_next_val(r1 + r2);
 }
 void CPU::exec_sltiu(int rd, int r1, int r2) {
-  print_itype("sltiu", rd, r1, r2);
-  if (registers[r1].get_cur_val() < r2) {
+  cout << "sltiu ";
+  if (r1< r2) {
     registers[rd].set_next_val(1);
   } else {
     registers[rd].set_next_val(0);
   }
 }
 void CPU::exec_ori(int rd, int r1, int r2) {
-  print_itype("ori", rd, r1, r2);
+  cout << "ori ";
+  // print_itype("ori", rd, r1, r2);
   registers[rd].set_next_val(r1 | r2);
 }
 
 void CPU::exec_LUI(int rd, int r1, int r2) {
-  print_itype("lui", rd, -1, r2);
+  cout << "lui ";
+  // print_itype("lui", rd, -1, r2);
   r2 <<= 12;
   registers[rd].set_next_val(r2);
 }
 
 void CPU::exec_sub(int rd, int r1, int r2) {
-  print_rtype("sub", rd, r1, r2);
+  cout << "sub ";
+  // print_rtype("sub", rd, r1, r2);
   registers[rd].set_next_val(r1 - r2);
 }
 void CPU::exec_and(int rd, int r1, int r2) {
-  print_rtype("and", rd, r1, r2);
+  cout << "and ";
+  // print_rtype("and", rd, r1, r2);
   registers[rd].set_next_val(r1 & r2);
 }
 void CPU::exec_sra(int rd, int r1, int r2) {
-  print_rtype("sra", rd, r1, r2);
+  cout << "sra ";
+  // print_rtype("sra", rd, r1, r2);
   registers[rd].set_next_val(r1 >> r2);
 }
 
@@ -272,11 +234,11 @@ int CPU::immediate_gen(std::bitset<32> bits) {
   bitset<20> b_imm_lui = sliceBits<20>(bits, 12, 20);
   bitset<5> b_imm_s_lower = sliceBits<5>(bits, 7, 7);
   bitset<7> b_imm_s_upper = sliceBits<7>(bits, 25, 7);
-  int opcode_val = to_int(opcode);
-  int imm_i = to_int(b_imm_i);
-  int imm_lui = to_int(b_imm_lui);
-  int imm_s_upper = to_int(b_imm_s_upper);
-  int imm_s_lower = to_int(b_imm_s_lower);
+  int opcode_val = to_int(opcode, false);
+  int imm_i = to_int(b_imm_i, false);
+  int imm_lui = to_int(b_imm_lui, false);
+  int imm_s_upper = to_int(b_imm_s_upper, false);
+  int imm_s_lower = to_int(b_imm_s_lower, true);
   int imm_s = (imm_s_upper << 5 | imm_s_lower);
   int imm_12 = (bits[31] ? -1 : 0) << 12;              // sign bit
   int imm_10_5 = sliceBits<6>(bits, 25, 6).to_ulong(); // bits 30-25
@@ -292,7 +254,7 @@ int CPU::immediate_gen(std::bitset<32> bits) {
     return imm_i;
     break;
   case 0b0110111: // LUI
-    imm_lui;
+    return imm_lui;
     break;
   case 0b0000011: // LBU, LW
     return imm_i;
@@ -304,7 +266,7 @@ int CPU::immediate_gen(std::bitset<32> bits) {
     return imm_b;
     break;
   case 0b1100111: // JALR
-    imm_i;
+    return imm_i;
     break;
   default:
     cerr << "Not immediate type: " << opcode_val << endl;

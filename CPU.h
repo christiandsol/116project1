@@ -59,12 +59,15 @@ public:
   // void exec_Store(int rd, int r1, int r2, int func3);
   // void exec_Branch(int rd, int r1, int r2, int func3);
   // void exec_JALR(int rd, int r1, int r2, int func3);
-  template <size_t N> int to_int(std::bitset<N> bits);
+  template <size_t N> int to_int(std::bitset<N> bits, bool us);
   int immediate_gen(std::bitset<32> bits);
   // add other functions and objects here
 };
 
-template <size_t N> int CPU::to_int(std::bitset<N> bits) {
+template <size_t N> int CPU::to_int(std::bitset<N> bits, bool us) {
+  if (us) {
+    return static_cast<int>(bits.to_ulong());
+  }
   if (bits.test(N - 1)) {
     unsigned long value = bits.to_ulong();
     long signed_value = static_cast<long>(value | (~((1UL << N) - 1)));

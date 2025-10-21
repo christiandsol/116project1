@@ -20,7 +20,7 @@ int Register::get_next_val() {
 
 
 int Register::set_next_val(int new_val) {
-	cout << "Setting register's next_val to " << hex << new_val << dec << endl;
+	// cout << "Setting register's next_val to " << hex << new_val << dec << endl;
 	next_val = new_val;
 	return new_val;
 }

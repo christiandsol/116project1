@@ -1,5 +1,6 @@
 #include "CPU.h"
 #include "Register.h"
+#include "util.h"
 
 #include <iostream>
 #include <bitset>
@@ -8,6 +9,7 @@
 #include <string>
 #include<fstream>
 #include <sstream>
+#include <valarray>
 using namespace std;
 
 /*
@@ -73,16 +75,33 @@ int main(int argc, char* argv[])
 		//fetch
 		bitset<32> instr = myInst.fetch(mem);
 		// myInst.print_instr(instr);
-		CPU::InstrFunc func = myCPU.set_controls(instr);
+		myCPU.set_controls(instr); // set controls
+		bitset<5> b_rs1 = sliceBits<5>(instr, 15, 5);
+		bitset<5> b_rs2 = sliceBits<5>(instr, 20, 5);
+		bitset<5> b_rd = sliceBits<5>(instr, 7, 5);
+		bitset<3> b_func3= sliceBits<3>(instr, 12, 3);
+		unsigned long rs1 = static_cast<int>(b_rs1.to_ulong());
+		unsigned long rs2 = static_cast<int>(b_rs2.to_ulong());
+		unsigned long rd = static_cast<int>(b_rd.to_ulong());
+		int read1 = myCPU.registers[rs1].get_cur_val();
+		int read2 = myCPU.registers[rs2].get_cur_val();
+		int imm = myCPU.immediate_gen(instr);
+		CPU::ALU operation = myCPU.ALU_ctrl(b_func3);
+		int val2 = MUX(imm, read2, myCPU.ctrl.alu_src);
+		if (operation== nullptr)
+			break;
+		(myCPU.*operation)(rd, read1, val2); //sets the next val's of the CPU internally
+		cout << "x" << rd << " x" << rs1 << " x" << rs2 << " imm: " << hex << imm << dec <<endl;
+		if (myCPU.ctrl.reg_write) {
+			myCPU.registers[rd].commit_next_val();
+		}
+		//read read registers
 		// decode
 		// ... 
 		myCPU.incPC();
-		if (func == nullptr)
-			break;
-		func(&myCPU, instr);
 	}
 	int a0 =myCPU.registers[10].get_cur_val();
-	int a1 =myCPU.registers[11].get_cur_val()  ;
+	int a1 =myCPU.registers[11].get_cur_val();
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
 	  cout << "(" << a0 << "," << a1 << ")" << endl;
 	

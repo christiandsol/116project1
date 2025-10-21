@@ -25,3 +25,7 @@ int AND(int input1, int input2) {
     return input1 & input2;
 }
 
+int SUB(int input1, int input2) {
+    return input1 - input2;
+}
+

@@ -33,3 +33,7 @@ template <size_t N> int to_int(std::bitset<N> bits, bool us) {
     return static_cast<int>(bits.to_ulong());
   }
 }
+int AND(int input1, int input2);
+int SUB(int input1, int input2);
+
+

@@ -14,5 +14,5 @@ public:
 	int get_cur_val();
 	int get_next_val();
 	int set_next_val(int next_val);
-	void commit_next_val();
+	void commit_next_val(int val);
 };

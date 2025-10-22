@@ -14,8 +14,7 @@ void Memory::set_mem_read(int val) { mem_read = val; }
 
 void Memory::store(int addr, int size, int value) {
   for (int i = 0; i < size; i++) {
-    // Extract the i-th byte (LSB first)
-    char byte = (value >> (8 * i)) & 0xFF;
+    unsigned char byte = (value >> (8 * i)) & 0xFF;
     memory[addr + i] = byte;
   }
 }
@@ -23,8 +22,8 @@ void Memory::store(int addr, int size, int value) {
 int Memory::load(int addr, int size) {
   int value = 0;
   for (int i = 0; i < size; i++) {
-    char byte = memory[addr + i];
-    value |= (static_cast<unsigned char>(byte) << (8 * i));
+    unsigned char byte = memory[addr + i];
+    value |= (byte << (8 * i));
   }
   cout << "Loaded value: " << dec << value << endl;
   return value;
@@ -32,8 +31,9 @@ int Memory::load(int addr, int size) {
 
 int Memory::execute_mem(int addr, int value) {
   int ret_val = -1;
+  unsigned int test =  static_cast<unsigned int>(func3);
   if (get_mem_write()) {
-    switch (func3) {
+    switch (test) {
     case 0b001: // SH
       store(addr, 2, value);
       break;
@@ -44,7 +44,7 @@ int Memory::execute_mem(int addr, int value) {
       break;
     }
   } else if (get_mem_read()) {
-    switch (func3) {
+    switch (test) {
     case 0b100: // LBU
       ret_val = load(addr, 1);
       break;
@@ -58,7 +58,7 @@ int Memory::execute_mem(int addr, int value) {
 
 void Memory::set_controls(bitset<32> instr) {
   bitset<7> opcode = sliceBits<7>(instr, 0, 7);
-  int opcode_val = to_int(opcode, false);
+  int opcode_val = to_int(opcode, true);
   bitset<3> b_func3 = sliceBits<3>(instr, 12, 3);
   int _func3 = to_int(b_func3, true);
   func3 = _func3;
@@ -97,7 +97,7 @@ void Memory::set_controls(bitset<32> instr) {
     mem_write = 0;
     break;
   default:
-    cerr << "Unknown opcode: " << opcode_val << endl;
+    cout << "Unknown opcode: " << opcode_val << endl;
     break;
   }
 }

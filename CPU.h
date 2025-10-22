@@ -13,8 +13,9 @@ class Instruction {
 public:
   bitset<32> instr; // instruction
   Instruction();    // constructor
-  bitset<32> fetch(char *&mem, unsigned long &PC);
+  bitset<32> fetch(char *&mem, unsigned long &next_PC, unsigned long &cur_PC);
   void print_instr(bitset<32> instr);
+  void commit_next_PC(unsigned long &next_PC, unsigned long &cur_PC);
 };
 
 class CPU {
@@ -41,7 +42,7 @@ public:
   Control ctrl;
   CPU(char *mem);
   unsigned long readPC();
-  Register registers[30];
+  Register registers[32];
   using ALU = void (CPU::*)(int, int, int); // rd, read1, read2, func3
   ALU read_instr(std::bitset<32> bits);
 
@@ -63,6 +64,7 @@ public:
   // void exec_Branch(int rd, int r1, int r2, int func3);
   // void exec_JALR(int rd, int r1, int r2, int func3);
   int immediate_gen(std::bitset<32> bits);
+  void print_registers();
   // add other functions and objects here
 };
 

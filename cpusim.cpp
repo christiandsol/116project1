@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 		unsigned long prev_PC = myCPU.PC.cur_pc;
 		bitset<32> instr = myInst.fetch(mem, myCPU.PC.next_pc, myCPU.PC.cur_pc);
 		
-		cout << "Instruction: " << hex << to_int(instr, false) << endl;
+		// cout << "Instruction: " << hex << to_int(instr, false) << endl;
 		unsigned long PC_4 = myCPU.PC.cur_pc + 8;
 
 		// set control bits for whole CPU
@@ -106,11 +106,7 @@ int main(int argc, char* argv[])
 			break;
 		(myCPU.*operation)(rd, read1, val2); //sets the next val's of the CPU internally
 		cout << "x" << rd << " x" << rs1 << " x" << rs2 << " imm: " << hex << imm << dec <<endl;
-		cout << dec << "Read 1: " << read1 << " val 1: " << val2 << endl;
 		int ne = SUB(read1, val2) != 0 ? 1 : 0;
-		cout << "ne: " << ne << endl;
-		cout << "myCPU.ctrl.branch: " << myCPU.ctrl.branch << endl;
-		cout << "myCPU.ctrl.jump: " << myCPU.ctrl.jump<< endl;
 		//set up memory
 		myMemory.set_controls(instr);
 
@@ -120,21 +116,18 @@ int main(int argc, char* argv[])
 
 		myCPU.PC.next_pc = MUX((imm + myCPU.registers[rs1].get_cur_val()) * 2, branch_PC, myCPU.ctrl.jump);
 
-		int reg_write_mem = myMemory.execute_mem(imm * 2 + myCPU.registers[rs1].get_cur_val(), myCPU.registers[rs2].get_cur_val());
+		int reg_write_mem = myMemory.execute_mem(imm + myCPU.registers[rs1].get_cur_val(), myCPU.registers[rs2].get_cur_val());
 
 		// write to registers if flag set
 		int reg_commit = MUX(reg_write_mem, myCPU.registers[rd].get_next_val(), myCPU.ctrl.mem_to_reg);
 		myCPU.registers[rd].set_next_val(reg_commit);
 		// next_val 
 
-
-		cout << "PC + 4: " << hex << PC_4 << endl;
-		cout << "cur_pc: " << hex << 	myCPU.PC.cur_pc<< endl;
 		myCPU.registers[rd].set_next_val(MUX(PC_4 / 2, myCPU.registers[rd].get_next_val(), myCPU.ctrl.jump));
 
 		//commit nextPC
 		if (myCPU.ctrl.reg_write && rd != 0) {
-			myCPU.registers[rd].commit_next_val(); 
+			myCPU.registers[rd].commit_next_val(rd); 
 		}
 		myInst.commit_next_PC(myCPU.PC.next_pc, myCPU.PC.cur_pc);
 	}

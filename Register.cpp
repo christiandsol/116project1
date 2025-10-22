@@ -25,8 +25,8 @@ int Register::set_next_val(int new_val) {
 	return new_val;
 }
 
-void Register::commit_next_val() {
-	cout << "Commiting register to " << hex << next_val << dec << endl;
+void Register::commit_next_val(int num) {
+	cout << "Register x" << dec << num << " being set to "<< hex << next_val << dec << endl;
 	cur_val = next_val;
 	next_val = 0;
 }
